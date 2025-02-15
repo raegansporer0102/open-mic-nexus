@@ -7,10 +7,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery } from "@tanstack/react-query";
-import { createClientComponentClient } from "@supabase/auth-helpers-react";
+import { createClient } from '@supabase/supabase-js';
 import { format } from "date-fns";
 
-const supabase = createClientComponentClient();
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
