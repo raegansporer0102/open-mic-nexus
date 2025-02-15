@@ -10,9 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 import { createClient } from '@supabase/supabase-js';
 import { format } from "date-fns";
 
+// Initialize Supabase client with your project's URL and anon key
 const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
 );
 
 const AdminPanel = () => {
