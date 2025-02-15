@@ -5,6 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
+import { createClientComponentClient } from "@supabase/auth-helpers-react";
+import { format } from "date-fns";
+
+const supabase = createClientComponentClient();
 
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,6 +18,34 @@ const AdminPanel = () => {
   const [prices, setPrices] = useState({
     performer: 349,
     audience: 149,
+  });
+
+  const { data: performerRegistrations = [], isLoading: loadingPerformers } = useQuery({
+    queryKey: ['performer-registrations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('performer_registrations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAuthenticated
+  });
+
+  const { data: audienceRegistrations = [], isLoading: loadingAudience } = useQuery({
+    queryKey: ['audience-registrations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('audience_registrations')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAuthenticated
   });
 
   const handleLogin = (e: React.FormEvent) => {
@@ -76,6 +110,35 @@ const AdminPanel = () => {
     );
   }
 
+  const renderRegistrationTable = (registrations: any[], type: 'performer' | 'audience') => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Mobile</TableHead>
+          {type === 'performer' && <TableHead>Performance Type</TableHead>}
+          <TableHead>Registration Date</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {registrations.map((registration) => (
+          <TableRow key={registration.id}>
+            <TableCell>{registration.name}</TableCell>
+            <TableCell>{registration.email}</TableCell>
+            <TableCell>{registration.mobile}</TableCell>
+            {type === 'performer' && (
+              <TableCell>{registration.performance_type}</TableCell>
+            )}
+            <TableCell>
+              {format(new Date(registration.created_at), 'PPpp')}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <div className="min-h-screen p-4 bg-background">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -116,19 +179,27 @@ const AdminPanel = () => {
           <Button className="mt-4">Save Prices</Button>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4">Performer Registrations</h2>
-            <div className="text-sm text-muted-foreground">
-              No registrations to display
-            </div>
+            {loadingPerformers ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : performerRegistrations.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No registrations to display</div>
+            ) : (
+              renderRegistrationTable(performerRegistrations, 'performer')
+            )}
           </Card>
 
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4">Audience Registrations</h2>
-            <div className="text-sm text-muted-foreground">
-              No registrations to display
-            </div>
+            {loadingAudience ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : audienceRegistrations.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No registrations to display</div>
+            ) : (
+              renderRegistrationTable(audienceRegistrations, 'audience')
+            )}
           </Card>
         </div>
       </div>
