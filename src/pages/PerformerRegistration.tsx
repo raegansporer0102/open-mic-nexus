@@ -16,8 +16,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
+  'https://gilvdghybdrntpzlgezo.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbHZkZ2h5YmRybnRwemxnZXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3ODQ1NjgsImV4cCI6MjA1MjM2MDU2OH0.lI7yvmVFCghF4-3wkn6k0lG7xiukgwuxJPmYOp0zphA'
 );
 
 const PerformerRegistration = () => {
