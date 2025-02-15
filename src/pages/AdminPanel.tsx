@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from '@supabase/supabase-js';
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 // Initialize Supabase client with your project's URL and anon key
 const supabase = createClient(
@@ -17,6 +18,7 @@ const supabase = createClient(
 );
 
 const AdminPanel = () => {
+  const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginData, setLoginData] = useState({ username: "", password: "" });
   const [prices, setPrices] = useState({
@@ -24,30 +26,42 @@ const AdminPanel = () => {
     audience: 149,
   });
 
-  const { data: performerRegistrations = [], isLoading: loadingPerformers } = useQuery({
+  // Query for performer registrations
+  const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
     queryKey: ['performer-registrations'],
     queryFn: async () => {
+      console.log('Fetching performer registrations...');
       const { data, error } = await supabase
         .from('performer_registrations')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Performer fetch error:', error);
+        throw error;
+      }
+      console.log('Performer data:', data);
+      return data || [];
     },
     enabled: isAuthenticated
   });
 
-  const { data: audienceRegistrations = [], isLoading: loadingAudience } = useQuery({
+  // Query for audience registrations
+  const { data: audienceRegistrations = [], isLoading: loadingAudience, error: audienceError } = useQuery({
     queryKey: ['audience-registrations'],
     queryFn: async () => {
+      console.log('Fetching audience registrations...');
       const { data, error } = await supabase
         .from('audience_registrations')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Audience fetch error:', error);
+        throw error;
+      }
+      console.log('Audience data:', data);
+      return data || [];
     },
     enabled: isAuthenticated
   });
@@ -57,8 +71,11 @@ const AdminPanel = () => {
     // For demo purposes, hardcoded credentials
     if (loginData.username === "admin" && loginData.password === "admin123") {
       setIsAuthenticated(true);
+      // Manually trigger refetch of data after login
+      queryClient.invalidateQueries({ queryKey: ['performer-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['audience-registrations'] });
     } else {
-      alert("Invalid credentials");
+      toast.error("Invalid credentials");
     }
   };
 
@@ -114,29 +131,46 @@ const AdminPanel = () => {
     );
   }
 
+  if (performerError || audienceError) {
+    return (
+      <div className="min-h-screen p-4 bg-background">
+        <Card className="p-6">
+          <h2 className="text-xl font-semibold text-red-500">Error loading data</h2>
+          <p>{performerError?.message || audienceError?.message}</p>
+        </Card>
+      </div>
+    );
+  }
+
   const renderRegistrationTable = (registrations: any[], type: 'performer' | 'audience') => (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Order ID</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Mobile</TableHead>
+          <TableHead>Transaction ID</TableHead>
           {type === 'performer' && <TableHead>Performance Type</TableHead>}
           <TableHead>Registration Date</TableHead>
+          <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {registrations.map((registration) => (
           <TableRow key={registration.id}>
+            <TableCell>{registration.order_id}</TableCell>
             <TableCell>{registration.name}</TableCell>
             <TableCell>{registration.email}</TableCell>
             <TableCell>{registration.mobile}</TableCell>
+            <TableCell>{registration.transaction_id}</TableCell>
             {type === 'performer' && (
               <TableCell>{registration.performance_type}</TableCell>
             )}
             <TableCell>
               {format(new Date(registration.created_at), 'PPpp')}
             </TableCell>
+            <TableCell>{registration.status}</TableCell>
           </TableRow>
         ))}
       </TableBody>
