@@ -15,10 +15,11 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  'https://gilvdghybdrntpzlgezo.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbHZkZ2h5YmRybnRwemxnZXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3ODQ1NjgsImV4cCI6MjA1MjM2MDU2OH0.lI7yvmVFCghF4-3wkn6k0lG7xiukgwuxJPmYOp0zphA'
-);
+
+
+const supabaseUrl = 'https://gilvdghybdrntpzlgezo.supabase.co'
+const supabaseKey = process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbHZkZ2h5YmRybnRwemxnZXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3ODQ1NjgsImV4cCI6MjA1MjM2MDU2OH0.lI7yvmVFCghF4-3wkn6k0lG7xiukgwuxJPmYOp0zphA
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 const PerformerRegistration = () => {
   const { toast } = useToast();
