@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Select,
   SelectContent,
@@ -11,9 +12,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
+);
 
 const PerformerRegistration = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,6 +32,7 @@ const PerformerRegistration = () => {
     profilePhoto: null as File | null,
     paymentScreenshot: null as File | null,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'profilePhoto' | 'paymentScreenshot') => {
     if (e.target.files && e.target.files[0]) {
@@ -30,9 +40,72 @@ const PerformerRegistration = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    setIsSubmitting(true);
+
+    try {
+      // Generate a random order ID
+      const orderId = 'ORD' + Date.now().toString();
+
+      // Upload profile photo
+      let profilePhotoUrl = '';
+      if (formData.profilePhoto) {
+        const { data: profileData, error: profileError } = await supabase.storage
+          .from('profile-photos')
+          .upload(`${orderId}-profile`, formData.profilePhoto);
+
+        if (profileError) throw new Error('Error uploading profile photo');
+        profilePhotoUrl = profileData.path;
+      }
+
+      // Upload payment screenshot
+      let paymentScreenshotUrl = '';
+      if (formData.paymentScreenshot) {
+        const { data: paymentData, error: paymentError } = await supabase.storage
+          .from('payment-screenshots')
+          .upload(`${orderId}-payment`, formData.paymentScreenshot);
+
+        if (paymentError) throw new Error('Error uploading payment screenshot');
+        paymentScreenshotUrl = paymentData.path;
+      }
+
+      // Store registration data
+      const { error: registrationError } = await supabase
+        .from('performer_registrations')
+        .insert([
+          {
+            order_id: orderId,
+            name: formData.name,
+            email: formData.email,
+            mobile: formData.mobile,
+            performance_type: formData.performanceType,
+            transaction_id: formData.transactionId,
+            profile_photo_url: profilePhotoUrl,
+            payment_screenshot_url: paymentScreenshotUrl,
+            status: 'pending'
+          }
+        ]);
+
+      if (registrationError) throw registrationError;
+
+      toast({
+        title: "Registration Successful",
+        description: `Your order ID is: ${orderId}. Please save this for future reference.`,
+      });
+
+      // Redirect to status page with order ID
+      navigate(`/status?orderId=${orderId}`);
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        title: "Registration Failed",
+        description: "There was an error processing your registration. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -154,8 +227,8 @@ const PerformerRegistration = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full">
-            Register Now
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Registering..." : "Register Now"}
           </Button>
         </form>
 
