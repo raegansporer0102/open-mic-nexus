@@ -7,15 +7,9 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createClient } from '@supabase/supabase-js';
 import { format } from "date-fns";
 import { toast } from "sonner";
-
-// Initialize Supabase client with your project's URL and anon key
-const supabase = createClient(
-  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
-);
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminPanel = () => {
   const queryClient = useQueryClient();
@@ -26,14 +20,15 @@ const AdminPanel = () => {
     audience: 149,
   });
 
-  // Query for performer registrations
+  // Query for registrations with type filter
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
-    queryKey: ['performer-registrations'],
+    queryKey: ['registrations', 'performer'],
     queryFn: async () => {
       console.log('Fetching performer registrations...');
       const { data, error } = await supabase
-        .from('performer_registrations')
+        .from('registrations')
         .select('*')
+        .eq('type', 'performer')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -48,12 +43,13 @@ const AdminPanel = () => {
 
   // Query for audience registrations
   const { data: audienceRegistrations = [], isLoading: loadingAudience, error: audienceError } = useQuery({
-    queryKey: ['audience-registrations'],
+    queryKey: ['registrations', 'audience'],
     queryFn: async () => {
       console.log('Fetching audience registrations...');
       const { data, error } = await supabase
-        .from('audience_registrations')
+        .from('registrations')
         .select('*')
+        .eq('type', 'audience')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -72,8 +68,7 @@ const AdminPanel = () => {
     if (loginData.username === "admin" && loginData.password === "admin123") {
       setIsAuthenticated(true);
       // Manually trigger refetch of data after login
-      queryClient.invalidateQueries({ queryKey: ['performer-registrations'] });
-      queryClient.invalidateQueries({ queryKey: ['audience-registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
     } else {
       toast.error("Invalid credentials");
     }
@@ -136,7 +131,18 @@ const AdminPanel = () => {
       <div className="min-h-screen p-4 bg-background">
         <Card className="p-6">
           <h2 className="text-xl font-semibold text-red-500">Error loading data</h2>
-          <p>{performerError?.message || audienceError?.message}</p>
+          <p className="mt-2">{(performerError as Error)?.message || (audienceError as Error)?.message}</p>
+          <Button 
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['registrations'] });
+            }}
+            className="mt-4"
+          >
+            Retry
+          </Button>
+          <Link to="/">
+            <Button variant="outline" className="ml-2 mt-4">Back to Home</Button>
+          </Link>
         </Card>
       </div>
     );
