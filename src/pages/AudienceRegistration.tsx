@@ -43,23 +43,47 @@ const AudienceRegistration = () => {
       // Upload profile photo
       let profilePhotoUrl = '';
       if (formData.profilePhoto) {
+        const fileExt = formData.profilePhoto.name.split('.').pop();
+        const fileName = `${orderId}-profile.${fileExt}`;
+        
         const { data: profileData, error: profileError } = await supabase.storage
           .from('profile-photos')
-          .upload(`${orderId}-profile`, formData.profilePhoto);
+          .upload(fileName, formData.profilePhoto);
 
-        if (profileError) throw new Error('Error uploading profile photo');
-        profilePhotoUrl = profileData.path;
+        if (profileError) {
+          console.error('Profile photo upload error:', profileError);
+          throw new Error('Error uploading profile photo');
+        }
+        
+        // Get the public URL
+        const { data: { publicUrl: profilePublicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(fileName);
+          
+        profilePhotoUrl = profilePublicUrl;
       }
 
       // Upload payment screenshot
       let paymentScreenshotUrl = '';
       if (formData.paymentScreenshot) {
+        const fileExt = formData.paymentScreenshot.name.split('.').pop();
+        const fileName = `${orderId}-payment.${fileExt}`;
+        
         const { data: paymentData, error: paymentError } = await supabase.storage
           .from('payment-screenshots')
-          .upload(`${orderId}-payment`, formData.paymentScreenshot);
+          .upload(fileName, formData.paymentScreenshot);
 
-        if (paymentError) throw new Error('Error uploading payment screenshot');
-        paymentScreenshotUrl = paymentData.path;
+        if (paymentError) {
+          console.error('Payment screenshot upload error:', paymentError);
+          throw new Error('Error uploading payment screenshot');
+        }
+        
+        // Get the public URL
+        const { data: { publicUrl: paymentPublicUrl } } = supabase.storage
+          .from('payment-screenshots')
+          .getPublicUrl(fileName);
+          
+        paymentScreenshotUrl = paymentPublicUrl;
       }
 
       // Store registration data
@@ -78,7 +102,10 @@ const AudienceRegistration = () => {
           }
         ]);
 
-      if (registrationError) throw registrationError;
+      if (registrationError) {
+        console.error('Registration error:', registrationError);
+        throw registrationError;
+      }
 
       toast({
         title: "Registration Successful",
