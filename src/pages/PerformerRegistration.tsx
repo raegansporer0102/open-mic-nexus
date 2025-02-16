@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -15,11 +15,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
 
-
-
-const supabaseUrl = 'https://gilvdghybdrntpzlgezo.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpbHZkZ2h5YmRybnRwemxnZXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY3ODQ1NjgsImV4cCI6MjA1MjM2MDU2OH0.lI7yvmVFCghF4-3wkn6k0lG7xiukgwuxJPmYOp0zphA'
-const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(
+  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
+);
 
 const PerformerRegistration = () => {
   const { toast } = useToast();
@@ -57,7 +56,10 @@ const PerformerRegistration = () => {
         
         const { data: profileData, error: profileError } = await supabase.storage
           .from('profile-photos')
-          .upload(fileName, formData.profilePhoto);
+          .upload(fileName, formData.profilePhoto, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (profileError) {
           console.error('Profile photo upload error:', profileError);
@@ -80,7 +82,10 @@ const PerformerRegistration = () => {
         
         const { data: paymentData, error: paymentError } = await supabase.storage
           .from('payment-screenshots')
-          .upload(fileName, formData.paymentScreenshot);
+          .upload(fileName, formData.paymentScreenshot, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (paymentError) {
           console.error('Payment screenshot upload error:', paymentError);
@@ -96,7 +101,7 @@ const PerformerRegistration = () => {
       }
 
       // Store registration data
-      const { error: registrationError } = await supabase
+      const { data: registrationData, error: registrationError } = await supabase
         .from('performer_registrations')
         .insert([
           {
@@ -110,7 +115,8 @@ const PerformerRegistration = () => {
             payment_screenshot_url: paymentScreenshotUrl,
             status: 'pending'
           }
-        ]);
+        ])
+        .select();
 
       if (registrationError) {
         console.error('Registration error:', registrationError);

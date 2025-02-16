@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createClient } from '@supabase/supabase-js';
@@ -48,7 +48,10 @@ const AudienceRegistration = () => {
         
         const { data: profileData, error: profileError } = await supabase.storage
           .from('profile-photos')
-          .upload(fileName, formData.profilePhoto);
+          .upload(fileName, formData.profilePhoto, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (profileError) {
           console.error('Profile photo upload error:', profileError);
@@ -71,7 +74,10 @@ const AudienceRegistration = () => {
         
         const { data: paymentData, error: paymentError } = await supabase.storage
           .from('payment-screenshots')
-          .upload(fileName, formData.paymentScreenshot);
+          .upload(fileName, formData.paymentScreenshot, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
         if (paymentError) {
           console.error('Payment screenshot upload error:', paymentError);
@@ -87,7 +93,7 @@ const AudienceRegistration = () => {
       }
 
       // Store registration data
-      const { error: registrationError } = await supabase
+      const { data: registrationData, error: registrationError } = await supabase
         .from('audience_registrations')
         .insert([
           {
@@ -100,7 +106,8 @@ const AudienceRegistration = () => {
             payment_screenshot_url: paymentScreenshotUrl,
             status: 'pending'
           }
-        ]);
+        ])
+        .select();
 
       if (registrationError) {
         console.error('Registration error:', registrationError);
