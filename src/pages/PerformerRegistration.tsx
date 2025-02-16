@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,12 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  'https://xmhdvmwahpcgpwlrkwzf.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtaGR2bXdhaHBjZ3B3bHJrd3pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTAyNjgxMzcsImV4cCI6MjAyNTg0NDEzN30.HFmEBXOZ1CrZcEPQ9qRzUTUBD0TLmRXr_xWrM5qHAYg'
-);
+import { supabase } from "@/integrations/supabase/client";
 
 const PerformerRegistration = () => {
   const { toast } = useToast();
@@ -102,7 +96,7 @@ const PerformerRegistration = () => {
 
       // Store registration data
       const { data: registrationData, error: registrationError } = await supabase
-        .from('performer_registrations')
+        .from('registrations')
         .insert([
           {
             order_id: orderId,
@@ -113,7 +107,8 @@ const PerformerRegistration = () => {
             transaction_id: formData.transactionId,
             profile_photo_url: profilePhotoUrl,
             payment_screenshot_url: paymentScreenshotUrl,
-            status: 'pending'
+            status: 'pending',
+            type: 'performer'
           }
         ])
         .select();
