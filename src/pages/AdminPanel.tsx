@@ -10,6 +10,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { CheckCircle, XCircle } from "lucide-react";
 
 const AdminPanel = () => {
   const queryClient = useQueryClient();
@@ -19,6 +26,10 @@ const AdminPanel = () => {
     performer: 349,
     audience: 149,
   });
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    type: string;
+  } | null>(null);
 
   // Query for registrations with type filter
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
@@ -76,6 +87,23 @@ const AdminPanel = () => {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'performer' | 'audience') => {
     setPrices({ ...prices, [type]: parseInt(e.target.value) || 0 });
+  };
+
+  const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
+    try {
+      const { error } = await supabase
+        .from('registrations')
+        .update({ status: newStatus })
+        .eq('id', registrationId);
+
+      if (error) throw error;
+
+      toast.success(`Registration ${newStatus} successfully`);
+      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+    } catch (error) {
+      console.error('Status update error:', error);
+      toast.error('Failed to update registration status');
+    }
   };
 
   if (!isAuthenticated) {
@@ -159,7 +187,9 @@ const AdminPanel = () => {
           <TableHead>Transaction ID</TableHead>
           {type === 'performer' && <TableHead>Performance Type</TableHead>}
           <TableHead>Registration Date</TableHead>
+          <TableHead>Photos</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -176,7 +206,61 @@ const AdminPanel = () => {
             <TableCell>
               {format(new Date(registration.created_at), 'PPpp')}
             </TableCell>
-            <TableCell>{registration.status}</TableCell>
+            <TableCell className="space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedImage({
+                  url: registration.profile_photo_url,
+                  type: 'Profile Photo'
+                })}
+              >
+                Profile
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedImage({
+                  url: registration.payment_screenshot_url,
+                  type: 'Payment Screenshot'
+                })}
+              >
+                Payment
+              </Button>
+            </TableCell>
+            <TableCell>
+              <span className={`px-2 py-1 rounded-full text-sm ${
+                registration.status === 'approved' 
+                  ? 'bg-green-100 text-green-800' 
+                  : registration.status === 'declined'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {registration.status}
+              </span>
+            </TableCell>
+            <TableCell>
+              {registration.status === 'pending' && (
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    className="bg-green-500 hover:bg-green-600"
+                    onClick={() => handleStatusUpdate(registration.id, 'approved')}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleStatusUpdate(registration.id, 'declined')}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    Decline
+                  </Button>
+                </div>
+              )}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -247,6 +331,26 @@ const AdminPanel = () => {
           </Card>
         </div>
       </div>
+
+      <Dialog 
+        open={!!selectedImage} 
+        onOpenChange={() => setSelectedImage(null)}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{selectedImage?.type}</DialogTitle>
+          </DialogHeader>
+          {selectedImage && (
+            <div className="mt-4">
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.type}
+                className="w-full h-auto rounded-lg"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
