@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -76,25 +77,27 @@ const AdminPanel = () => {
   const { data: currentPrices } = useQuery({
     queryKey: ['prices'],
     queryFn: async () => {
+      console.log('Fetching prices...');
       const { data, error } = await supabase
         .from('prices')
         .select('*')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Prices fetch error:', error);
+        throw error;
+      }
+      
+      if (data) {
+        setPrices({
+          performer: data.performer_price,
+          audience: data.audience_price
+        });
+      }
+      
       return data;
     },
-    enabled: isAuthenticated,
-    meta: {
-      onSuccess: (data: any) => {
-        if (data) {
-          setPrices({
-            performer: data.performer_price,
-            audience: data.audience_price
-          });
-        }
-      }
-    }
+    enabled: isAuthenticated
   });
 
   const handleLogin = (e: React.FormEvent) => {
@@ -104,17 +107,20 @@ const AdminPanel = () => {
       setIsAuthenticated(true);
       // Manually trigger refetch of data after login
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      queryClient.invalidateQueries({ queryKey: ['prices'] });
     } else {
       toast.error("Invalid credentials");
     }
   };
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'performer' | 'audience') => {
-    setPrices({ ...prices, [type]: parseInt(e.target.value) || 0 });
+    const value = parseInt(e.target.value) || 0;
+    setPrices(prev => ({ ...prev, [type]: value }));
   };
 
   const handleSavePrices = async () => {
     try {
+      console.log('Updating prices:', prices);
       const { error } = await supabase
         .from('prices')
         .update({
@@ -123,7 +129,10 @@ const AdminPanel = () => {
         })
         .eq('id', 1);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Price update error:', error);
+        throw error;
+      }
 
       toast.success("Prices updated successfully");
       queryClient.invalidateQueries({ queryKey: ['prices'] });
@@ -135,14 +144,19 @@ const AdminPanel = () => {
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
+      console.log('Updating registration status:', { registrationId, newStatus });
       const { error } = await supabase
         .from('registrations')
         .update({ status: newStatus })
         .eq('id', registrationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Status update error:', error);
+        throw error;
+      }
 
       toast.success(`Registration ${newStatus} successfully`);
+      // Refresh both registration lists
       queryClient.invalidateQueries({ queryKey: ['registrations'] });
     } catch (error) {
       console.error('Status update error:', error);
