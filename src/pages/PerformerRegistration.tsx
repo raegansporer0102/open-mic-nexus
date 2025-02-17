@@ -120,7 +120,33 @@ const PerformerRegistration = () => {
 
       toast({
         title: "Registration Successful",
-        description: `Your order ID is: ${orderId}. Please save this for future reference.`,
+        description: (
+          <div className="space-y-2">
+            <p>Your registration has been submitted successfully.</p>
+            <div className="p-3 bg-secondary rounded-lg">
+              <p className="font-semibold mb-1">Your Order ID:</p>
+              <div className="flex items-center gap-2">
+                <code className="bg-background p-2 rounded select-all">{orderId}</code>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(orderId);
+                    toast({
+                      title: "Copied!",
+                      description: "Order ID copied to clipboard",
+                    });
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              ⚠️ Please save this Order ID. If lost, we cannot recover it.
+            </p>
+          </div>
+        ),
       });
 
       // Redirect to status page with order ID
