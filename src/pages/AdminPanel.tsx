@@ -72,6 +72,29 @@ const AdminPanel = () => {
     enabled: isAuthenticated
   });
 
+  // Add a query to fetch current prices
+  const { data: currentPrices } = useQuery({
+    queryKey: ['prices'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prices')
+        .select('*')
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setPrices({
+          performer: data.performer_price,
+          audience: data.audience_price
+        });
+      }
+    },
+    enabled: isAuthenticated
+  });
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // For demo purposes, hardcoded credentials
@@ -92,17 +115,16 @@ const AdminPanel = () => {
     try {
       const { error } = await supabase
         .from('prices')
-        .upsert([
-          {
-            id: 1, // Using a single row for prices
-            performer_price: prices.performer,
-            audience_price: prices.audience
-          }
-        ]);
+        .update({
+          performer_price: prices.performer,
+          audience_price: prices.audience
+        })
+        .eq('id', 1);
 
       if (error) throw error;
 
       toast.success("Prices updated successfully");
+      queryClient.invalidateQueries({ queryKey: ['prices'] });
     } catch (error) {
       console.error('Error updating prices:', error);
       toast.error("Failed to update prices");
