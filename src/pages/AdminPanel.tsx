@@ -145,19 +145,43 @@ const AdminPanel = () => {
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
       console.log('Updating registration status:', { registrationId, newStatus });
-      const { error } = await supabase
+      
+      // First verify the registration exists
+      const { data: registration, error: fetchError } = await supabase
         .from('registrations')
-        .update({ status: newStatus })
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching registration:', fetchError);
+        toast.error('Could not find registration');
+        return;
+      }
+
+      // Then update the status
+      const { error: updateError } = await supabase
+        .from('registrations')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', registrationId);
 
-      if (error) {
-        console.error('Status update error:', error);
-        throw error;
+      if (updateError) {
+        console.error('Status update error:', updateError);
+        toast.error('Failed to update registration status');
+        return;
       }
 
       toast.success(`Registration ${newStatus} successfully`);
+      
       // Refresh both registration lists
-      queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
+        queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
+      ]);
+      
     } catch (error) {
       console.error('Status update error:', error);
       toast.error('Failed to update registration status');
