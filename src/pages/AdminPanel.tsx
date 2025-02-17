@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -87,6 +86,27 @@ const AdminPanel = () => {
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'performer' | 'audience') => {
     setPrices({ ...prices, [type]: parseInt(e.target.value) || 0 });
+  };
+
+  const handleSavePrices = async () => {
+    try {
+      const { error } = await supabase
+        .from('prices')
+        .upsert([
+          {
+            id: 1, // Using a single row for prices
+            performer_price: prices.performer,
+            audience_price: prices.audience
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast.success("Prices updated successfully");
+    } catch (error) {
+      console.error('Error updating prices:', error);
+      toast.error("Failed to update prices");
+    }
   };
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
@@ -304,7 +324,12 @@ const AdminPanel = () => {
               />
             </div>
           </div>
-          <Button className="mt-4">Save Prices</Button>
+          <Button 
+            className="mt-4" 
+            onClick={handleSavePrices}
+          >
+            Save Prices
+          </Button>
         </Card>
 
         <div className="grid grid-cols-1 gap-6">
