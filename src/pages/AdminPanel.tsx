@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,15 +85,17 @@ const AdminPanel = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      if (data) {
-        setPrices({
-          performer: data.performer_price,
-          audience: data.audience_price
-        });
+    enabled: isAuthenticated,
+    meta: {
+      onSuccess: (data: any) => {
+        if (data) {
+          setPrices({
+            performer: data.performer_price,
+            audience: data.audience_price
+          });
+        }
       }
-    },
-    enabled: isAuthenticated
+    }
   });
 
   const handleLogin = (e: React.FormEvent) => {
