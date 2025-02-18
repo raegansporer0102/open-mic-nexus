@@ -34,68 +34,51 @@ const AdminPanel = () => {
     try {
       console.log('Updating registration status:', { registrationId, newStatus });
       
-      // Update the status
-      const { error: updateError } = await supabase
-        .from('registrations')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', registrationId);
-
-      if (updateError) {
-        console.error('Status update error:', updateError);
-        toast.error('Failed to update registration status');
-        return;
-      }
-
-      // Verify the update was successful
-      const { data: updatedRegistration, error: verifyError } = await supabase
+      // First, get the current registration
+      const { data: registration, error: fetchError } = await supabase
         .from('registrations')
         .select('*')
         .eq('id', registrationId)
         .single();
 
-      if (verifyError || !updatedRegistration) {
-        console.error('Verification error:', verifyError);
-        toast.error('Failed to verify status update');
+      if (fetchError || !registration) {
+        console.error('Error fetching registration:', fetchError);
+        toast.error('Could not find registration');
         return;
       }
 
-      if (updatedRegistration.status !== newStatus) {
-        console.error('Status mismatch:', { 
-          expected: newStatus, 
-          actual: updatedRegistration.status 
-        });
-        toast.error('Status update failed');
-        return;
-      }
-
-      toast.success(`Registration ${newStatus} successfully`);
-      
-      // Refresh both registration lists immediately
-      await Promise.all([
-        queryClient.invalidateQueries({ 
-          queryKey: ['registrations', 'performer'],
-          exact: true 
-        }),
-        queryClient.invalidateQueries({ 
-          queryKey: ['registrations', 'audience'],
-          exact: true 
+      // Update the status with a direct update
+      const { error: updateError } = await supabase
+        .from('registrations')
+        .update({
+          status: newStatus,
+          updated_at: new Date().toISOString()
         })
-      ]);
-      
-      // Force refetch after a short delay to ensure UI is updated
-      setTimeout(() => {
-        queryClient.invalidateQueries({ 
-          queryKey: ['registrations', 'performer'],
-          exact: true 
-        });
-        queryClient.invalidateQueries({ 
-          queryKey: ['registrations', 'audience'],
-          exact: true 
-        });
-      }, 500);
+        .match({ id: registrationId })
+        .select();
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        toast.error('Failed to update status');
+        return;
+      }
+
+      // Success! Show toast and refresh data
+      toast.success(`Registration ${newStatus} successfully`);
+
+      // Invalidate and refetch queries
+      await queryClient.invalidateQueries({
+        queryKey: ['registrations', registration.type],
+        exact: true,
+        refetchType: 'active',
+      });
+
+      // Force an immediate refetch
+      queryClient.refetchQueries({
+        queryKey: ['registrations', registration.type],
+        exact: true,
+        type: 'active',
+      });
 
     } catch (error) {
       console.error('Status update error:', error);
@@ -103,52 +86,51 @@ const AdminPanel = () => {
     }
   };
 
-  // Query for registrations with type filter
+  // Update the queries to be more reliable
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
     queryKey: ['registrations', 'performer'],
     queryFn: async () => {
       console.log('Fetching performer registrations...');
       const { data, error } = await supabase
         .from('registrations')
-        .select('*')
+        .select()
         .eq('type', 'performer')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Performer fetch error:', error);
-        throw error;
-      }
+      if (error) throw error;
+      
       console.log('Performer data:', data);
       return data || [];
     },
     enabled: isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnReconnect: true,
+    staleTime: 0,
+    cacheTime: 0
   });
 
-  // Query for audience registrations
   const { data: audienceRegistrations = [], isLoading: loadingAudience, error: audienceError } = useQuery({
     queryKey: ['registrations', 'audience'],
     queryFn: async () => {
       console.log('Fetching audience registrations...');
       const { data, error } = await supabase
         .from('registrations')
-        .select('*')
+        .select()
         .eq('type', 'audience')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Audience fetch error:', error);
-        throw error;
-      }
+      if (error) throw error;
+      
       console.log('Audience data:', data);
       return data || [];
     },
     enabled: isAuthenticated,
-    staleTime: 0, // Always fetch fresh data
+    refetchOnWindowFocus: true,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnReconnect: true,
+    staleTime: 0,
+    cacheTime: 0
   });
 
   // Add a query to fetch current prices
