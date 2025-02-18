@@ -34,13 +34,30 @@ const AdminPanel = () => {
     try {
       console.log(`Starting status update for registration ${registrationId} to ${newStatus}`);
       
-      // Update with maybeSingle() instead of single()
-      const { data, error: updateError } = await supabase
+      // First, check if the registration exists
+      const { data: registration, error: fetchError } = await supabase
+        .from('registrations')
+        .select()
+        .eq('id', registrationId)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
+        toast.error('Failed to fetch registration');
+        return;
+      }
+
+      if (!registration) {
+        console.error('No registration found with id:', registrationId);
+        toast.error('Registration not found');
+        return;
+      }
+
+      // Then perform the update without selecting
+      const { error: updateError } = await supabase
         .from('registrations')
         .update({ status: newStatus })
-        .eq('id', registrationId)
-        .select()
-        .maybeSingle();
+        .eq('id', registrationId);
 
       if (updateError) {
         console.error('Update error:', updateError);
@@ -48,13 +65,7 @@ const AdminPanel = () => {
         return;
       }
 
-      if (!data) {
-        console.error('No registration found with id:', registrationId);
-        toast.error('Registration not found');
-        return;
-      }
-
-      console.log('Update successful:', data);
+      console.log('Update successful for registration:', registrationId);
       toast.success(`Registration ${newStatus} successfully`);
       
       // Refresh both performer and audience queries to ensure lists are updated
