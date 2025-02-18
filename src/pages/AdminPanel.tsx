@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +30,79 @@ const AdminPanel = () => {
     type: string;
   } | null>(null);
 
+  const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
+    try {
+      console.log('Updating registration status:', { registrationId, newStatus });
+      
+      // Update the status
+      const { error: updateError } = await supabase
+        .from('registrations')
+        .update({ 
+          status: newStatus,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', registrationId);
+
+      if (updateError) {
+        console.error('Status update error:', updateError);
+        toast.error('Failed to update registration status');
+        return;
+      }
+
+      // Verify the update was successful
+      const { data: updatedRegistration, error: verifyError } = await supabase
+        .from('registrations')
+        .select('*')
+        .eq('id', registrationId)
+        .single();
+
+      if (verifyError || !updatedRegistration) {
+        console.error('Verification error:', verifyError);
+        toast.error('Failed to verify status update');
+        return;
+      }
+
+      if (updatedRegistration.status !== newStatus) {
+        console.error('Status mismatch:', { 
+          expected: newStatus, 
+          actual: updatedRegistration.status 
+        });
+        toast.error('Status update failed');
+        return;
+      }
+
+      toast.success(`Registration ${newStatus} successfully`);
+      
+      // Refresh both registration lists immediately
+      await Promise.all([
+        queryClient.invalidateQueries({ 
+          queryKey: ['registrations', 'performer'],
+          exact: true 
+        }),
+        queryClient.invalidateQueries({ 
+          queryKey: ['registrations', 'audience'],
+          exact: true 
+        })
+      ]);
+      
+      // Force refetch after a short delay to ensure UI is updated
+      setTimeout(() => {
+        queryClient.invalidateQueries({ 
+          queryKey: ['registrations', 'performer'],
+          exact: true 
+        });
+        queryClient.invalidateQueries({ 
+          queryKey: ['registrations', 'audience'],
+          exact: true 
+        });
+      }, 500);
+
+    } catch (error) {
+      console.error('Status update error:', error);
+      toast.error('Failed to update registration status');
+    }
+  };
+
   // Query for registrations with type filter
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
     queryKey: ['registrations', 'performer'],
@@ -49,7 +121,10 @@ const AdminPanel = () => {
       console.log('Performer data:', data);
       return data || [];
     },
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   // Query for audience registrations
@@ -70,7 +145,10 @@ const AdminPanel = () => {
       console.log('Audience data:', data);
       return data || [];
     },
-    enabled: isAuthenticated
+    enabled: isAuthenticated,
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   // Add a query to fetch current prices
@@ -139,52 +217,6 @@ const AdminPanel = () => {
     } catch (error) {
       console.error('Error updating prices:', error);
       toast.error("Failed to update prices");
-    }
-  };
-
-  const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
-    try {
-      console.log('Updating registration status:', { registrationId, newStatus });
-      
-      // First verify the registration exists
-      const { data: registration, error: fetchError } = await supabase
-        .from('registrations')
-        .select('*')
-        .eq('id', registrationId)
-        .single();
-
-      if (fetchError) {
-        console.error('Error fetching registration:', fetchError);
-        toast.error('Could not find registration');
-        return;
-      }
-
-      // Then update the status
-      const { error: updateError } = await supabase
-        .from('registrations')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', registrationId);
-
-      if (updateError) {
-        console.error('Status update error:', updateError);
-        toast.error('Failed to update registration status');
-        return;
-      }
-
-      toast.success(`Registration ${newStatus} successfully`);
-      
-      // Refresh both registration lists
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
-        queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
-      ]);
-      
-    } catch (error) {
-      console.error('Status update error:', error);
-      toast.error('Failed to update registration status');
     }
   };
 
