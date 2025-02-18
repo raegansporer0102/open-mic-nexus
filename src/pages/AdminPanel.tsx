@@ -34,13 +34,13 @@ const AdminPanel = () => {
     try {
       console.log(`Starting status update for registration ${registrationId} to ${newStatus}`);
       
-      // Simple, direct update
+      // Update with maybeSingle() instead of single()
       const { data, error: updateError } = await supabase
         .from('registrations')
         .update({ status: newStatus })
         .eq('id', registrationId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (updateError) {
         console.error('Update error:', updateError);
@@ -49,16 +49,19 @@ const AdminPanel = () => {
       }
 
       if (!data) {
-        console.error('No data returned after update');
-        toast.error('Status update failed');
+        console.error('No registration found with id:', registrationId);
+        toast.error('Registration not found');
         return;
       }
 
       console.log('Update successful:', data);
       toast.success(`Registration ${newStatus} successfully`);
       
-      // Refresh the data
-      await queryClient.invalidateQueries({ queryKey: ['registrations'] });
+      // Refresh both performer and audience queries to ensure lists are updated
+      await queryClient.invalidateQueries({ 
+        queryKey: ['registrations'],
+        refetchType: 'all'
+      });
 
     } catch (error) {
       console.error('Status update error:', error);
