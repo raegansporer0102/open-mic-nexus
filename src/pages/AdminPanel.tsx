@@ -32,35 +32,15 @@ const AdminPanel = () => {
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
-      // Start loading state
-      toast.loading('Updating registration status...');
+      console.log(`Starting status update for registration ${registrationId} to ${newStatus}`);
       
-      // First, check if the registration exists and get its current status
-      const { data: existingRegistration, error: fetchError } = await supabase
+      // Simple, direct update
+      const { data, error: updateError } = await supabase
         .from('registrations')
-        .select('*')
+        .update({ status: newStatus })
         .eq('id', registrationId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Fetch error:', fetchError);
-        toast.error('Error fetching registration');
-        return;
-      }
-
-      if (!existingRegistration) {
-        toast.error('Registration not found');
-        return;
-      }
-
-      // Perform the update
-      const { error: updateError } = await supabase
-        .from('registrations')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', registrationId);
+        .select()
+        .single();
 
       if (updateError) {
         console.error('Update error:', updateError);
@@ -68,37 +48,17 @@ const AdminPanel = () => {
         return;
       }
 
-      // Verify the update
-      const { data: verifyReg, error: verifyError } = await supabase
-        .from('registrations')
-        .select('*')
-        .eq('id', registrationId)
-        .maybeSingle();
-
-      if (verifyError || !verifyReg) {
-        console.error('Verification error:', verifyError);
-        toast.error('Failed to verify update');
-        return;
-      }
-
-      if (verifyReg.status !== newStatus) {
-        console.error('Status not updated correctly');
+      if (!data) {
+        console.error('No data returned after update');
         toast.error('Status update failed');
         return;
       }
 
-      // Success! Update UI and show message
+      console.log('Update successful:', data);
       toast.success(`Registration ${newStatus} successfully`);
       
-      // Invalidate queries for both types to ensure all lists are updated
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ['registrations', 'performer']
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ['registrations', 'audience']
-        })
-      ]);
+      // Refresh the data
+      await queryClient.invalidateQueries({ queryKey: ['registrations'] });
 
     } catch (error) {
       console.error('Status update error:', error);
