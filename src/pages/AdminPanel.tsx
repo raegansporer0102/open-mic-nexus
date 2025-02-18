@@ -86,7 +86,7 @@ const AdminPanel = () => {
     }
   };
 
-  // Update the queries to be more reliable
+  // Update the queries to use correct options
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
     queryKey: ['registrations', 'performer'],
     queryFn: async () => {
@@ -107,7 +107,7 @@ const AdminPanel = () => {
     refetchOnMount: true,
     refetchOnReconnect: true,
     staleTime: 0,
-    cacheTime: 0
+    gcTime: 0
   });
 
   const { data: audienceRegistrations = [], isLoading: loadingAudience, error: audienceError } = useQuery({
@@ -130,7 +130,7 @@ const AdminPanel = () => {
     refetchOnMount: true,
     refetchOnReconnect: true,
     staleTime: 0,
-    cacheTime: 0
+    gcTime: 0
   });
 
   // Add a query to fetch current prices
