@@ -34,26 +34,7 @@ const AdminPanel = () => {
     try {
       console.log(`Starting status update for registration ${registrationId} to ${newStatus}`);
       
-      // First, check if the registration exists
-      const { data: registration, error: fetchError } = await supabase
-        .from('registrations')
-        .select()
-        .eq('id', registrationId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Fetch error:', fetchError);
-        toast.error('Failed to fetch registration');
-        return;
-      }
-
-      if (!registration) {
-        console.error('No registration found with id:', registrationId);
-        toast.error('Registration not found');
-        return;
-      }
-
-      // Then perform the update without selecting
+      // Perform a simple update without any checks or selects
       const { error: updateError } = await supabase
         .from('registrations')
         .update({ status: newStatus })
