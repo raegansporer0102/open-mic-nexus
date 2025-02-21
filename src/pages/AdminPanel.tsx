@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
@@ -25,52 +26,23 @@ const AdminPanel = () => {
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
-      // First update the status
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('registrations')
         .update({ status: newStatus })
         .eq('id', registrationId);
 
-      if (updateError) {
-        console.error('Update error:', updateError);
-        toast.error(`Failed to ${newStatus} registration`);
+      if (error) {
+        console.error('Error updating status:', error);
+        toast.error(`Failed to ${newStatus} registration: ${error.message}`);
         return;
       }
 
-      // Then verify the update by fetching the updated record
-      const { data: verifiedData, error: verifyError } = await supabase
-        .from('registrations')
-        .select('status')
-        .eq('id', registrationId)
-        .maybeSingle();
-
-      if (verifyError) {
-        console.error('Verification error:', verifyError);
-        toast.error('Failed to verify update');
-        return;
-      }
-
-      if (!verifiedData) {
-        console.error('Registration not found during verification');
-        toast.error('Registration not found');
-        return;
-      }
-
-      if (verifiedData.status === newStatus) {
-        console.log('Status updated successfully:', verifiedData);
-        toast.success(`Registration ${newStatus} successfully`);
-        
-        // Invalidate both queries to refresh the data
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
-          queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
-        ]);
-      } else {
-        console.error('Status mismatch after update');
-        toast.error('Status update failed');
-      }
+      toast.success(`Registration ${newStatus} successfully`);
+      
+      // Invalidate and refetch all registration queries
+      await queryClient.invalidateQueries({ queryKey: ['registrations'] });
     } catch (error) {
-      console.error('Status update error:', error);
+      console.error('Unexpected error:', error);
       toast.error('An unexpected error occurred');
     }
   };
@@ -147,7 +119,7 @@ const AdminPanel = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
-          <Card className="p-6 glass-card">
+          <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Performer Registrations</h2>
             {loadingPerformers ? (
               <div className="text-sm text-muted-foreground">Loading...</div>
@@ -163,7 +135,7 @@ const AdminPanel = () => {
             )}
           </Card>
 
-          <Card className="p-6 glass-card">
+          <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Audience Registrations</h2>
             {loadingAudience ? (
               <div className="text-sm text-muted-foreground">Loading...</div>
