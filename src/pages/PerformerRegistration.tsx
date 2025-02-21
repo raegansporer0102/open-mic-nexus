@@ -169,7 +169,7 @@ const PerformerRegistration = () => {
         <div className="space-y-2 text-center">
           <h1 className="text-2xl font-bold tracking-tight">Performer Registration</h1>
           <p className="text-sm text-muted-foreground">
-            Showcase your talent at our Open Mic Night
+            Showcase your talent at The Navodian Platform
           </p>
         </div>
 
