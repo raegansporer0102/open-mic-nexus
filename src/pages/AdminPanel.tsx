@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useState } from "react";
@@ -9,11 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LoginCard } from "@/components/admin/LoginCard";
-import { PriceManagement } from "@/components/admin/PriceManagement";
 import { RegistrationsTable } from "@/components/admin/RegistrationsTable";
 
 const AdminPanel = () => {
@@ -26,35 +25,50 @@ const AdminPanel = () => {
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
-      console.log(`Updating registration ${registrationId} status to ${newStatus}`);
-      
-      const { data, error } = await supabase
+      // First update the status
+      const { error: updateError } = await supabase
         .from('registrations')
         .update({ status: newStatus })
+        .eq('id', registrationId);
+
+      if (updateError) {
+        console.error('Update error:', updateError);
+        toast.error(`Failed to ${newStatus} registration`);
+        return;
+      }
+
+      // Then verify the update by fetching the updated record
+      const { data: verifiedData, error: verifyError } = await supabase
+        .from('registrations')
+        .select('status')
         .eq('id', registrationId)
-        .select()
         .maybeSingle();
 
-      if (error) {
-        console.error('Update error:', error);
-        toast.error(`Failed to ${newStatus} registration: ${error.message}`);
+      if (verifyError) {
+        console.error('Verification error:', verifyError);
+        toast.error('Failed to verify update');
         return;
       }
 
-      if (!data) {
-        console.error('No data returned after update');
-        toast.error('Registration not found or update failed');
+      if (!verifiedData) {
+        console.error('Registration not found during verification');
+        toast.error('Registration not found');
         return;
       }
 
-      console.log('Update successful:', data);
-      toast.success(`Registration ${newStatus} successfully`);
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
-        queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
-      ]);
-
+      if (verifiedData.status === newStatus) {
+        console.log('Status updated successfully:', verifiedData);
+        toast.success(`Registration ${newStatus} successfully`);
+        
+        // Invalidate both queries to refresh the data
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
+          queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
+        ]);
+      } else {
+        console.error('Status mismatch after update');
+        toast.error('Status update failed');
+      }
     } catch (error) {
       console.error('Status update error:', error);
       toast.error('An unexpected error occurred');
@@ -70,11 +84,7 @@ const AdminPanel = () => {
         .eq('type', 'performer')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Performer fetch error:', error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data || [];
     },
     enabled: isAuthenticated,
@@ -89,11 +99,7 @@ const AdminPanel = () => {
         .eq('type', 'audience')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Audience fetch error:', error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data || [];
     },
     enabled: isAuthenticated,
@@ -140,8 +146,6 @@ const AdminPanel = () => {
           </div>
         </div>
 
-        <PriceManagement />
-
         <div className="grid grid-cols-1 gap-6">
           <Card className="p-6 glass-card">
             <h2 className="text-xl font-semibold mb-4">Performer Registrations</h2>
@@ -185,14 +189,22 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>{selectedImage?.type}</DialogTitle>
           </DialogHeader>
+          <DialogDescription className="mt-4">
+            Click the image to view in full size
+          </DialogDescription>
           {selectedImage && (
-            <div className="mt-4">
+            <a 
+              href={selectedImage.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-4 block"
+            >
               <img
                 src={selectedImage.url}
                 alt={selectedImage.type}
-                className="w-full h-auto rounded-lg"
+                className="w-full h-auto rounded-lg cursor-zoom-in"
               />
-            </div>
+            </a>
           )}
         </DialogContent>
       </Dialog>
