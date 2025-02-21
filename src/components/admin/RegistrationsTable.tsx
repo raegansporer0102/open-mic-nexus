@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { CheckCircle, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface RegistrationsTableProps {
   registrations: any[];
   type: 'performer' | 'audience';
-  onStatusUpdate: (registrationId: string, newStatus: 'approved' | 'declined') => void;
+  onStatusUpdate: (registrationId: string, newStatus: 'approved' | 'declined') => Promise<void>;
   onImageSelect: (image: { url: string; type: string }) => void;
 }
 
@@ -17,6 +18,16 @@ export const RegistrationsTable = ({
   onStatusUpdate,
   onImageSelect,
 }: RegistrationsTableProps) => {
+  const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
+    try {
+      await onStatusUpdate(registrationId, newStatus);
+      toast.success(`Registration ${newStatus} successfully`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error(`Failed to ${newStatus} registration. Please try again.`);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <Table>
@@ -87,7 +98,7 @@ export const RegistrationsTable = ({
                     <Button
                       size="sm"
                       className="bg-green-500 hover:bg-green-600"
-                      onClick={() => onStatusUpdate(registration.id, 'approved')}
+                      onClick={() => handleStatusUpdate(registration.id, 'approved')}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Approve
@@ -95,7 +106,7 @@ export const RegistrationsTable = ({
                     <Button
                       size="sm"
                       variant="destructive"
-                      onClick={() => onStatusUpdate(registration.id, 'declined')}
+                      onClick={() => handleStatusUpdate(registration.id, 'declined')}
                     >
                       <XCircle className="w-4 h-4 mr-1" />
                       Decline
@@ -110,3 +121,4 @@ export const RegistrationsTable = ({
     </div>
   );
 };
+
