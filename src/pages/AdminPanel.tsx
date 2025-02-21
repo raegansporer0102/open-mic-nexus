@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,32 +33,39 @@ const AdminPanel = () => {
 
   const handleStatusUpdate = async (registrationId: string, newStatus: 'approved' | 'declined') => {
     try {
-      console.log(`Starting status update for registration ${registrationId} to ${newStatus}`);
+      console.log(`Updating registration ${registrationId} status to ${newStatus}`);
       
-      // Perform a simple update without any checks or selects
-      const { error: updateError } = await supabase
+      const { data, error } = await supabase
         .from('registrations')
         .update({ status: newStatus })
-        .eq('id', registrationId);
+        .eq('id', registrationId)
+        .select()
+        .maybeSingle();
 
-      if (updateError) {
-        console.error('Update error:', updateError);
-        toast.error('Failed to update status');
+      if (error) {
+        console.error('Update error:', error);
+        toast.error(`Failed to ${newStatus} registration: ${error.message}`);
         return;
       }
 
-      console.log('Update successful for registration:', registrationId);
+      if (!data) {
+        console.error('No data returned after update');
+        toast.error('Registration not found or update failed');
+        return;
+      }
+
+      console.log('Update successful:', data);
       toast.success(`Registration ${newStatus} successfully`);
-      
-      // Refresh both performer and audience queries to ensure lists are updated
-      await queryClient.invalidateQueries({ 
-        queryKey: ['registrations'],
-        refetchType: 'all'
-      });
+
+      // Invalidate and refetch registration queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
+        queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
+      ]);
 
     } catch (error) {
       console.error('Status update error:', error);
-      toast.error('Failed to update status');
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -79,11 +87,6 @@ const AdminPanel = () => {
       return data || [];
     },
     enabled: isAuthenticated,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    staleTime: 0,
-    gcTime: 0
   });
 
   // Audience registrations query
@@ -104,11 +107,6 @@ const AdminPanel = () => {
       return data || [];
     },
     enabled: isAuthenticated,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-    refetchOnReconnect: true,
-    staleTime: 0,
-    gcTime: 0
   });
 
   const { data: currentPrices } = useQuery({
@@ -434,3 +432,4 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
+
