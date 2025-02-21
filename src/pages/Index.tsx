@@ -62,33 +62,45 @@ const Index = () => {
       </div>
     </div>
 
-    <div style={{ textAlign: "center", fontSize: "14px", color: "#6c757d", marginTop: "2rem" }}>
-  <p>
-    <a 
-      href="/admin" 
-      target="_blank" 
-      rel="noopener noreferrer" 
-      style={{
-        backgroundColor: "red",
-        color: "white",
-        padding: "8px 16px",
-        borderRadius: "4px",
-        textDecoration: "none",
-        display: "inline-block",
-        fontWeight: "bold",
-        transition: "background-color 0.3s"
-      }}
-      onMouseOver={(e) => e.currentTarget.style.backgroundColor = "darkred"}
-      onMouseOut={(e) => e.currentTarget.style.backgroundColor = "red"}
-    >
-      Admin Login
-    </a>
-  </p>
-</div>
-
+    
   
   );
 };
+
+const AdminLogin = () => {
+  const buttonStyle: React.CSSProperties = {
+    backgroundColor: "red",
+    color: "white",
+    padding: "8px 16px",
+    borderRadius: "4px",
+    textDecoration: "none",
+    display: "inline-block",
+    fontWeight: "bold",
+    transition: "background-color 0.3s",
+    border: "none",
+    cursor: "pointer"
+  };
+
+  return (
+    <div style={{ textAlign: "center", fontSize: "14px", color: "#6c757d", marginTop: "2rem" }}>
+      <p>
+        <a 
+          href="/admin" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style={buttonStyle}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "darkred")}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "red")}
+        >
+          Admin Login
+        </a>
+      </p>
+    </div>
+  );
+};
+
+export default AdminLogin;
+
 
 
 
