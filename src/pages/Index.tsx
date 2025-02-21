@@ -62,19 +62,31 @@ const Index = () => {
       </div>
     </div>
 
-    <div className="text-center text-sm text-muted-foreground mt-8">
+    <div style={{ textAlign: "center", fontSize: "14px", color: "#6c757d", marginTop: "2rem" }}>
   <p>
-    Admin Login{" "}
     <a 
       href="/admin" 
       target="_blank" 
       rel="noopener noreferrer" 
-      className="text-blue-500 hover:underline"
+      style={{
+        backgroundColor: "red",
+        color: "white",
+        padding: "8px 16px",
+        borderRadius: "4px",
+        textDecoration: "none",
+        display: "inline-block",
+        fontWeight: "bold",
+        transition: "background-color 0.3s"
+      }}
+      onMouseOver={(e) => e.currentTarget.style.backgroundColor = "darkred"}
+      onMouseOut={(e) => e.currentTarget.style.backgroundColor = "red"}
     >
-      
+      Admin Login
     </a>
   </p>
 </div>
+
+  
   );
 };
 
