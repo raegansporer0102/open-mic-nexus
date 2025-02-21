@@ -61,10 +61,8 @@ const Index = () => {
         <p>Need help? Contact our support team</p>
       </div>
     </div>
-  );
-};
 
-<div className="text-center text-sm text-muted-foreground mt-8">
+    <div className="text-center text-sm text-muted-foreground mt-8">
   <p>
     Admin Login{" "}
     <a 
@@ -77,6 +75,10 @@ const Index = () => {
     </a>
   </p>
 </div>
+  );
+};
+
+
 
 
 export default Index;
