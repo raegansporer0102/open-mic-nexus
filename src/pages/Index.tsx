@@ -29,7 +29,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-8 space-y-12">
       <div className="text-center space-y-4 max-w-2xl">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight fade-in">
-          Open Mic Night
+          The Navodian Platform Ticket Booking
         </h1>
         <p className="text-lg text-muted-foreground fade-in">
           Join us for an unforgettable evening of talent and entertainment
@@ -63,5 +63,20 @@ const Index = () => {
     </div>
   );
 };
+
+<div className="text-center text-sm text-muted-foreground mt-8">
+  <p>
+    Admin Login{" "}
+    <a 
+      href="/admin" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      className="text-blue-500 hover:underline"
+    >
+      
+    </a>
+  </p>
+</div>
+
 
 export default Index;
