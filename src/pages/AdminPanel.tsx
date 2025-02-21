@@ -1,13 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -16,16 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle, XCircle } from "lucide-react";
+import { LoginCard } from "@/components/admin/LoginCard";
+import { PriceManagement } from "@/components/admin/PriceManagement";
+import { RegistrationsTable } from "@/components/admin/RegistrationsTable";
 
 const AdminPanel = () => {
   const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [prices, setPrices] = useState({
-    performer: 349,
-    audience: 149,
-  });
   const [selectedImage, setSelectedImage] = useState<{
     url: string;
     type: string;
@@ -57,7 +50,6 @@ const AdminPanel = () => {
       console.log('Update successful:', data);
       toast.success(`Registration ${newStatus} successfully`);
 
-      // Invalidate and refetch registration queries
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['registrations', 'performer'] }),
         queryClient.invalidateQueries({ queryKey: ['registrations', 'audience'] })
@@ -69,7 +61,6 @@ const AdminPanel = () => {
     }
   };
 
-  // Performer registrations query
   const { data: performerRegistrations = [], isLoading: loadingPerformers, error: performerError } = useQuery({
     queryKey: ['registrations', 'performer'],
     queryFn: async () => {
@@ -89,7 +80,6 @@ const AdminPanel = () => {
     enabled: isAuthenticated,
   });
 
-  // Audience registrations query
   const { data: audienceRegistrations = [], isLoading: loadingAudience, error: audienceError } = useQuery({
     queryKey: ['registrations', 'audience'],
     queryFn: async () => {
@@ -109,120 +99,8 @@ const AdminPanel = () => {
     enabled: isAuthenticated,
   });
 
-  const { data: currentPrices } = useQuery({
-    queryKey: ['prices'],
-    queryFn: async () => {
-      console.log('Fetching prices...');
-      const { data, error } = await supabase
-        .from('prices')
-        .select('*')
-        .single();
-      
-      if (error) {
-        console.error('Prices fetch error:', error);
-        throw error;
-      }
-      
-      if (data) {
-        setPrices({
-          performer: data.performer_price,
-          audience: data.audience_price
-        });
-      }
-      
-      return data;
-    },
-    enabled: isAuthenticated
-  });
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // For demo purposes, hardcoded credentials
-    if (loginData.username === "admin" && loginData.password === "admin123") {
-      setIsAuthenticated(true);
-      // Manually trigger refetch of data after login
-      queryClient.invalidateQueries({ queryKey: ['registrations'] });
-      queryClient.invalidateQueries({ queryKey: ['prices'] });
-    } else {
-      toast.error("Invalid credentials");
-    }
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'performer' | 'audience') => {
-    const value = parseInt(e.target.value) || 0;
-    setPrices(prev => ({ ...prev, [type]: value }));
-  };
-
-  const handleSavePrices = async () => {
-    try {
-      console.log('Updating prices:', prices);
-      const { error } = await supabase
-        .from('prices')
-        .update({
-          performer_price: prices.performer,
-          audience_price: prices.audience
-        })
-        .eq('id', 1);
-
-      if (error) {
-        console.error('Price update error:', error);
-        throw error;
-      }
-
-      toast.success("Prices updated successfully");
-      queryClient.invalidateQueries({ queryKey: ['prices'] });
-    } catch (error) {
-      console.error('Error updating prices:', error);
-      toast.error("Failed to update prices");
-    }
-  };
-
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="w-full max-w-lg p-6 space-y-6 glass-card">
-          <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-bold tracking-tight">Admin Login</h1>
-            <p className="text-sm text-muted-foreground">
-              Please enter your credentials to access the admin panel
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={loginData.username}
-                onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={loginData.password}
-                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full">
-              Login
-            </Button>
-          </form>
-
-          <div className="text-center">
-            <Link to="/">
-              <Button variant="outline">Back to Home</Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-    );
+    return <LoginCard onLogin={setIsAuthenticated} />;
   }
 
   if (performerError || audienceError) {
@@ -247,97 +125,6 @@ const AdminPanel = () => {
     );
   }
 
-  const renderRegistrationTable = (registrations: any[], type: 'performer' | 'audience') => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Order ID</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Mobile</TableHead>
-          <TableHead>Transaction ID</TableHead>
-          {type === 'performer' && <TableHead>Performance Type</TableHead>}
-          <TableHead>Registration Date</TableHead>
-          <TableHead>Photos</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {registrations.map((registration) => (
-          <TableRow key={registration.id}>
-            <TableCell>{registration.order_id}</TableCell>
-            <TableCell>{registration.name}</TableCell>
-            <TableCell>{registration.email}</TableCell>
-            <TableCell>{registration.mobile}</TableCell>
-            <TableCell>{registration.transaction_id}</TableCell>
-            {type === 'performer' && (
-              <TableCell>{registration.performance_type}</TableCell>
-            )}
-            <TableCell>
-              {format(new Date(registration.created_at), 'PPpp')}
-            </TableCell>
-            <TableCell className="space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedImage({
-                  url: registration.profile_photo_url,
-                  type: 'Profile Photo'
-                })}
-              >
-                Profile
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedImage({
-                  url: registration.payment_screenshot_url,
-                  type: 'Payment Screenshot'
-                })}
-              >
-                Payment
-              </Button>
-            </TableCell>
-            <TableCell>
-              <span className={`px-2 py-1 rounded-full text-sm ${
-                registration.status === 'approved' 
-                  ? 'bg-green-100 text-green-800' 
-                  : registration.status === 'declined'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {registration.status}
-              </span>
-            </TableCell>
-            <TableCell>
-              {registration.status === 'pending' && (
-                <div className="flex space-x-2">
-                  <Button
-                    size="sm"
-                    className="bg-green-500 hover:bg-green-600"
-                    onClick={() => handleStatusUpdate(registration.id, 'approved')}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => handleStatusUpdate(registration.id, 'declined')}
-                  >
-                    <XCircle className="w-4 h-4 mr-1" />
-                    Decline
-                  </Button>
-                </div>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-
   return (
     <div className="min-h-screen p-4 bg-background">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -353,35 +140,7 @@ const AdminPanel = () => {
           </div>
         </div>
 
-        <Card className="p-6 glass-card mb-6">
-          <h2 className="text-xl font-semibold mb-4">Price Management</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="performerPrice">Performer Registration Price (₹)</Label>
-              <Input
-                id="performerPrice"
-                type="number"
-                value={prices.performer}
-                onChange={(e) => handlePriceChange(e, 'performer')}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="audiencePrice">Audience Registration Price (₹)</Label>
-              <Input
-                id="audiencePrice"
-                type="number"
-                value={prices.audience}
-                onChange={(e) => handlePriceChange(e, 'audience')}
-              />
-            </div>
-          </div>
-          <Button 
-            className="mt-4" 
-            onClick={handleSavePrices}
-          >
-            Save Prices
-          </Button>
-        </Card>
+        <PriceManagement />
 
         <div className="grid grid-cols-1 gap-6">
           <Card className="p-6 glass-card">
@@ -391,7 +150,12 @@ const AdminPanel = () => {
             ) : performerRegistrations.length === 0 ? (
               <div className="text-sm text-muted-foreground">No registrations to display</div>
             ) : (
-              renderRegistrationTable(performerRegistrations, 'performer')
+              <RegistrationsTable
+                registrations={performerRegistrations}
+                type="performer"
+                onStatusUpdate={handleStatusUpdate}
+                onImageSelect={setSelectedImage}
+              />
             )}
           </Card>
 
@@ -402,7 +166,12 @@ const AdminPanel = () => {
             ) : audienceRegistrations.length === 0 ? (
               <div className="text-sm text-muted-foreground">No registrations to display</div>
             ) : (
-              renderRegistrationTable(audienceRegistrations, 'audience')
+              <RegistrationsTable
+                registrations={audienceRegistrations}
+                type="audience"
+                onStatusUpdate={handleStatusUpdate}
+                onImageSelect={setSelectedImage}
+              />
             )}
           </Card>
         </div>
@@ -432,4 +201,3 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-
