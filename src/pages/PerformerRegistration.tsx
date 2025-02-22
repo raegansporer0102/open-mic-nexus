@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import OrderIdDialog from "@/components/OrderIdDialog";
 
 const PerformerRegistration = () => {
   const { toast } = useToast();
@@ -27,6 +28,8 @@ const PerformerRegistration = () => {
     paymentScreenshot: null as File | null,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showOrderId, setShowOrderId] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'profilePhoto' | 'paymentScreenshot') => {
     if (e.target.files && e.target.files[0]) {
@@ -39,8 +42,8 @@ const PerformerRegistration = () => {
     setIsSubmitting(true);
 
     try {
-      // Generate a random order ID
       const orderId = 'ORD' + Date.now().toString();
+      setCurrentOrderId(orderId);
 
       // Upload profile photo
       let profilePhotoUrl = '';
@@ -118,39 +121,7 @@ const PerformerRegistration = () => {
         throw registrationError;
       }
 
-      toast({
-        title: "Registration Successful",
-        description: (
-          <div className="space-y-2">
-            <p>Your registration has been submitted successfully.</p>
-            <div className="p-3 bg-secondary rounded-lg">
-              <p className="font-semibold mb-1">Your Order ID:</p>
-              <div className="flex items-center gap-2">
-                <code className="bg-background p-2 rounded select-all">{orderId}</code>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(orderId);
-                    toast({
-                      title: "Copied!",
-                      description: "Order ID copied to clipboard",
-                    });
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              ⚠️ Please save this Order ID. If lost, we cannot recover it.
-            </p>
-          </div>
-        ),
-      });
-
-      // Redirect to status page with order ID
-      navigate(`/status?orderId=${orderId}`);
+      setShowOrderId(true); // Show the dialog instead of toast
     } catch (error) {
       console.error('Registration error:', error);
       toast({
@@ -293,6 +264,15 @@ const PerformerRegistration = () => {
           </Link>
         </div>
       </Card>
+      {showOrderId && (
+        <OrderIdDialog
+          orderId={currentOrderId}
+          onClose={() => {
+            setShowOrderId(false);
+            navigate(`/status?orderId=${currentOrderId}`);
+          }}
+        />
+      )}
     </div>
   );
 };
