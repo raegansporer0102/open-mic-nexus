@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, Box } from "lucide-react";
 import { toast } from "sonner";
 
 interface RegistrationsTableProps {
@@ -48,7 +48,12 @@ export const RegistrationsTable = ({
         <TableBody>
           {registrations.map((registration) => (
             <TableRow key={registration.id}>
-              <TableCell className="font-medium">{registration.order_id}</TableCell>
+              <TableCell>
+                <div className="flex items-center space-x-2 bg-primary/10 p-2 rounded-md border border-primary/20">
+                  <Box className="w-4 h-4 text-primary" />
+                  <span className="font-medium text-primary">{registration.order_id}</span>
+                </div>
+              </TableCell>
               <TableCell>{registration.name}</TableCell>
               <TableCell>{registration.email}</TableCell>
               <TableCell>{registration.mobile}</TableCell>
